@@ -83,6 +83,7 @@ app.use((req, res, next) => {
     console.log('Content-Type:', req.get('Content-Type'));
     console.log('Body:', req.body);
     console.log('Body type:', typeof req.body);
+    console.log('Raw body:', req.body);
   }
   next();
 });
