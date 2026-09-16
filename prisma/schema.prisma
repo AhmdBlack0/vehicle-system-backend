@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+/// User roles in the system
+enum Role {
+  ADMIN
+  WORKER
+}
+
+/// Vehicle operational status
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+/// System users — both admins and workers
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  username  String   @unique
+  password  String
+  role      Role     @default(WORKER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Fuel logs created by this worker
+  fuelLogs FuelLog[]
+
+  @@map("users")
+}
+
+/// Company vehicles tracked by the system
+model Vehicle {
+  id            Int           @id @default(autoincrement())
+  barcode       String        @unique
+  vehicleNumber String
+  plateNumber   String
+  vehicleType   String
+  department    String
+  status        VehicleStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  /// Fuel logs associated with this vehicle
+  fuelLogs FuelLog[]
+
+  @@map("vehicles")
+}
+
+/// Fuel operations log — one record per fueling event
+model FuelLog {
+  id             Int      @id @default(autoincrement())
+  vehicleId      Int
+  workerId       Int
+  fuelPrice      Decimal  @db.Decimal(10, 2)
+  fuelQuantity   Decimal  @db.Decimal(10, 2)
+  totalPrice     Decimal  @db.Decimal(10, 2)
+  notes          String?
+  odometerBefore String?
+  odometerAfter  String?
+  pumpBefore     String?
+  pumpAfter      String?
+  latitude       Float?
+  longitude      Float?
+  createdAt      DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  worker  User    @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@map("fuel_logs")
+}
