@@ -70,12 +70,6 @@ app.use('/api/auth/login', authLimiter);
 // Gzip compression for responses
 app.use(compression());
 
-// JSON body parser (10mb limit for safety)
-app.use(express.json({ limit: '10mb' }));
-
-// URL-encoded body parser (extended for FormData support)
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 // Debug middleware to log request body
 app.use((req, res, next) => {
   if (req.method === 'POST' && req.path.includes('fuel-logs')) {
@@ -83,7 +77,6 @@ app.use((req, res, next) => {
     console.log('Content-Type:', req.get('Content-Type'));
     console.log('Body:', req.body);
     console.log('Body type:', typeof req.body);
-    console.log('Raw body:', req.body);
   }
   next();
 });
