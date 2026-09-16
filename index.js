@@ -34,7 +34,7 @@ app.use(helmet());
 // CORS: Cross-Origin Resource Sharing
 app.use(
   cors({
-    origin: "https://raad-system.vercel.app",
+    origin: "https://vehicle-system-frontend.vercel.app",
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
