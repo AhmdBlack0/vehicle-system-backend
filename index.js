@@ -34,7 +34,7 @@ app.use(helmet());
 // CORS: Cross-Origin Resource Sharing
 app.use(
   cors({
-    origin: "https://vehicle-system-frontend.vercel.app",
+    origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -70,16 +70,11 @@ app.use('/api/auth/login', authLimiter);
 // Gzip compression for responses
 app.use(compression());
 
-// Debug middleware to log request body
-app.use((req, res, next) => {
-  if (req.method === 'POST' && req.path.includes('fuel-logs')) {
-    console.log('=== DEBUG MIDDLEWARE ===');
-    console.log('Content-Type:', req.get('Content-Type'));
-    console.log('Body:', req.body);
-    console.log('Body type:', typeof req.body);
-  }
-  next();
-});
+// JSON body parser (10mb limit for safety)
+app.use(express.json({ limit: '10mb' }));
+
+// URL-encoded body parser
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Logging ──────────────────────────────────────────────────────────────────
 

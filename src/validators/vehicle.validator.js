@@ -33,6 +33,10 @@ const createVehicleSchema = z.object({
     })
     .optional()
     .default('ACTIVE'),
+  imageUrl: z
+    .string()
+    .optional()
+    .nullable(),
 });
 
 const updateVehicleSchema = z.object({
@@ -45,6 +49,10 @@ const updateVehicleSchema = z.object({
       errorMap: () => ({ message: `Status must be one of: ${vehicleStatuses.join(', ')}` }),
     })
     .optional(),
+  imageUrl: z
+    .string()
+    .optional()
+    .nullable(),
 });
 
 module.exports = { createVehicleSchema, updateVehicleSchema };

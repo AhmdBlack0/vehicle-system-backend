@@ -47,6 +47,22 @@ const createFuelLogSchema = z.object({
     .number()
     .optional()
     .nullable(),
+  odometerBeforeImage: z
+    .string()
+    .optional()
+    .nullable(),
+  odometerAfterImage: z
+    .string()
+    .optional()
+    .nullable(),
+  pumpBeforeImage: z
+    .string()
+    .optional()
+    .nullable(),
+  pumpAfterImage: z
+    .string()
+    .optional()
+    .nullable(),
 });
 
 module.exports = { createFuelLogSchema };

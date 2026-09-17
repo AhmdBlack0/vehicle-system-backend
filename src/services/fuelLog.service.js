@@ -6,6 +6,7 @@
 const fuelLogRepository = require('../repositories/fuelLog.repository');
 const vehicleRepository = require('../repositories/vehicle.repository');
 const ApiError = require('../utils/ApiError');
+const { uploadBase64Image } = require('../utils/cloudinaryUpload');
 
 class FuelLogService {
   /**
@@ -40,14 +41,15 @@ class FuelLogService {
    * Create a new fuel log entry
    * Workflow:
    *  1. Validate vehicle exists and is ACTIVE
-   *  2. Calculate totalPrice = fuelPrice × fuelQuantity
-   *  3. Persist to database
+   *  2. Upload images to Cloudinary if provided
+   *  3. Calculate totalPrice = fuelPrice × fuelQuantity
+   *  4. Persist to database
    *
-   * @param {Object} data - { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, latitude, longitude }
+   * @param {Object} data - { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage }
    * @param {number} workerId - ID of the authenticated worker
    */
   async createFuelLog(data, workerId) {
-    const { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, latitude, longitude } = data;
+    const { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, latitude, longitude, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage } = data;
 
     // 1. Validate vehicle exists
     const vehicle = await vehicleRepository.findById(vehicleId);
@@ -63,10 +65,23 @@ class FuelLogService {
       );
     }
 
-    // 3. Calculate total price (rounded to 2 decimal places)
+    // 3. Upload images to Cloudinary if provided
+    const [
+      uploadedOdometerBeforeImage,
+      uploadedOdometerAfterImage,
+      uploadedPumpBeforeImage,
+      uploadedPumpAfterImage,
+    ] = await Promise.all([
+      odometerBeforeImage ? uploadBase64Image(odometerBeforeImage, 'fuel-logs/odometer') : null,
+      odometerAfterImage ? uploadBase64Image(odometerAfterImage, 'fuel-logs/odometer') : null,
+      pumpBeforeImage ? uploadBase64Image(pumpBeforeImage, 'fuel-logs/pump') : null,
+      pumpAfterImage ? uploadBase64Image(pumpAfterImage, 'fuel-logs/pump') : null,
+    ]);
+
+    // 4. Calculate total price (rounded to 2 decimal places)
     const totalPrice = Math.round(fuelPrice * fuelQuantity * 100) / 100;
 
-    // 4. Create fuel log (including GPS location if provided)
+    // 5. Create fuel log (including GPS location and images if provided)
     return fuelLogRepository.create({
       vehicleId,
       workerId,
@@ -80,6 +95,10 @@ class FuelLogService {
       pumpAfter: pumpAfter || null,
       latitude: latitude ?? null,
       longitude: longitude ?? null,
+      odometerBeforeImage: uploadedOdometerBeforeImage,
+      odometerAfterImage: uploadedOdometerAfterImage,
+      pumpBeforeImage: uploadedPumpBeforeImage,
+      pumpAfterImage: uploadedPumpAfterImage,
     });
   }
 }

@@ -52,6 +52,7 @@ model Vehicle {
   vehicleType   String
   department    String
   status        VehicleStatus @default(ACTIVE)
+  imageUrl      String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -63,20 +64,24 @@ model Vehicle {
 
 /// Fuel operations log — one record per fueling event
 model FuelLog {
-  id             Int      @id @default(autoincrement())
-  vehicleId      Int
-  workerId       Int
-  fuelPrice      Decimal  @db.Decimal(10, 2)
-  fuelQuantity   Decimal  @db.Decimal(10, 2)
-  totalPrice     Decimal  @db.Decimal(10, 2)
-  notes          String?
-  odometerBefore String?
-  odometerAfter  String?
-  pumpBefore     String?
-  pumpAfter      String?
-  latitude       Float?
-  longitude      Float?
-  createdAt      DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  vehicleId           Int
+  workerId            Int
+  fuelPrice           Decimal  @db.Decimal(10, 2)
+  fuelQuantity        Decimal  @db.Decimal(10, 2)
+  totalPrice          Decimal  @db.Decimal(10, 2)
+  notes               String?
+  odometerBefore      String?
+  odometerAfter       String?
+  pumpBefore          String?
+  pumpAfter           String?
+  latitude            Float?
+  longitude           Float?
+  odometerBeforeImage String?
+  odometerAfterImage  String?
+  pumpBeforeImage     String?
+  pumpAfterImage      String?
+  createdAt           DateTime @default(now())
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   worker  User    @relation(fields: [workerId], references: [id], onDelete: Restrict)

@@ -7,6 +7,7 @@ const vehicleRepository = require('../repositories/vehicle.repository');
 const { generateBarcodeBuffer } = require('../utils/barcode.util');
 const { generateUniqueBarcode } = require('../utils/generateBarcode');
 const ApiError = require('../utils/ApiError');
+const { uploadBase64Image } = require('../utils/cloudinaryUpload');
 
 class VehicleService {
   /**
@@ -62,7 +63,10 @@ class VehicleService {
       if (!existing) isUnique = true;
     }
 
-    return vehicleRepository.create({ ...data, barcode });
+    // Upload image to Cloudinary if provided
+    const uploadedImageUrl = data.imageUrl ? await uploadBase64Image(data.imageUrl, 'vehicles') : null;
+
+    return vehicleRepository.create({ ...data, barcode, imageUrl: uploadedImageUrl });
   }
 
   /**
@@ -70,8 +74,12 @@ class VehicleService {
    */
   async updateVehicle(id, data) {
     // Ensure vehicle exists first
-    await this.getVehicleById(id);
-    return vehicleRepository.update(id, data);
+    const existingVehicle = await this.getVehicleById(id);
+
+    // Upload image to Cloudinary if provided
+    const uploadedImageUrl = data.imageUrl ? await uploadBase64Image(data.imageUrl, 'vehicles') : null;
+
+    return vehicleRepository.update(id, { ...data, imageUrl: uploadedImageUrl });
   }
 
   /**
