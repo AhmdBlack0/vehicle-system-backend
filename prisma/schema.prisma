@@ -24,6 +24,12 @@ enum VehicleStatus {
   INACTIVE
 }
 
+/// Tank transaction type
+enum TankTransactionType {
+  ADD
+  WITHDRAW
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 /// System users — both admins and workers
@@ -39,6 +45,8 @@ model User {
 
   /// Fuel logs created by this worker
   fuelLogs FuelLog[]
+  /// Tank transactions performed by this user
+  tankTransactions TankTransaction[]
 
   @@map("users")
 }
@@ -58,6 +66,8 @@ model Vehicle {
 
   /// Fuel logs associated with this vehicle
   fuelLogs FuelLog[]
+  /// Tank transactions associated with this vehicle (withdrawals)
+  tankTransactions TankTransaction[]
 
   @@map("vehicles")
 }
@@ -87,4 +97,49 @@ model FuelLog {
   worker  User    @relation(fields: [workerId], references: [id], onDelete: Restrict)
 
   @@map("fuel_logs")
+}
+
+/// Main fuel tank for tracking fuel inventory
+model Tank {
+  id              Int                @id @default(autoincrement())
+  currentBalance  Decimal            @db.Decimal(10, 2) @default(0)
+  totalAdded      Decimal            @db.Decimal(10, 2) @default(0)
+  totalWithdrawn  Decimal            @db.Decimal(10, 2) @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  transactions    TankTransaction[]
+
+  @@map("tank")
+}
+
+/// Tank transaction log — tracks all fuel additions and withdrawals
+model TankTransaction {
+  id              Int                @id @default(autoincrement())
+  tankId          Int
+  type            TankTransactionType
+  quantity        Decimal            @db.Decimal(10, 2)
+  balanceBefore   Decimal            @db.Decimal(10, 2)
+  balanceAfter    Decimal            @db.Decimal(10, 2)
+  userId          Int
+  vehicleId       Int?
+  notes           String?
+  tankBeforeImage String?
+  tankAfterImage  String?
+  createdAt       DateTime           @default(now())
+
+  tank    Tank  @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@map("tank_transaction")
+}
+
+/// System settings — stores global configuration
+model Settings {
+  id         Int     @id @default(1)
+  fuelPrice  Decimal @db.Decimal(10, 2) @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@map("settings")
 }

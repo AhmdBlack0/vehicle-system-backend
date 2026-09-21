@@ -9,10 +9,6 @@ const createFuelLogSchema = z.object({
     .number({ required_error: 'Vehicle ID is required' })
     .int('Vehicle ID must be an integer')
     .positive('Vehicle ID must be a positive number'),
-  fuelPrice: z
-    .number({ required_error: 'Fuel price is required' })
-    .positive('Fuel price must be a positive number')
-    .max(9999.99, 'Fuel price is too large'),
   fuelQuantity: z
     .number({ required_error: 'Fuel quantity is required' })
     .positive('Fuel quantity must be a positive number')

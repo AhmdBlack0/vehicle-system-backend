@@ -5,6 +5,8 @@
 
 const fuelLogRepository = require('../repositories/fuelLog.repository');
 const vehicleRepository = require('../repositories/vehicle.repository');
+const tankService = require('../services/tank.service');
+const settingsService = require('../services/settings.service');
 const ApiError = require('../utils/ApiError');
 const { uploadBase64Image } = require('../utils/cloudinaryUpload');
 
@@ -41,15 +43,17 @@ class FuelLogService {
    * Create a new fuel log entry
    * Workflow:
    *  1. Validate vehicle exists and is ACTIVE
-   *  2. Upload images to Cloudinary if provided
-   *  3. Calculate totalPrice = fuelPrice × fuelQuantity
-   *  4. Persist to database
+   *  2. Get fuel price from system settings
+   *  3. Withdraw fuel from tank (validates sufficient balance)
+   *  4. Upload images to Cloudinary if provided
+   *  5. Calculate totalPrice = fuelPrice × fuelQuantity
+   *  6. Persist to database
    *
-   * @param {Object} data - { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage }
+   * @param {Object} data - { vehicleId, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage }
    * @param {number} workerId - ID of the authenticated worker
    */
   async createFuelLog(data, workerId) {
-    const { vehicleId, fuelPrice, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, latitude, longitude, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage } = data;
+    const { vehicleId, fuelQuantity, notes, odometerBefore, odometerAfter, pumpBefore, pumpAfter, latitude, longitude, odometerBeforeImage, odometerAfterImage, pumpBeforeImage, pumpAfterImage } = data;
 
     // 1. Validate vehicle exists
     const vehicle = await vehicleRepository.findById(vehicleId);
@@ -65,7 +69,23 @@ class FuelLogService {
       );
     }
 
-    // 3. Upload images to Cloudinary if provided
+    // 3. Get fuel price from system settings
+    const settings = await settingsService.getSettings();
+    if (!settings || !settings.fuelPrice) {
+      throw new ApiError('سعر الوقود غير محدد في الإعدادات. يرجى التواصل مع المسؤول.', 400);
+    }
+    const fuelPrice = parseFloat(settings.fuelPrice);
+
+    // 4. Withdraw fuel from tank (this validates sufficient balance)
+    // Do this BEFORE uploading images to avoid unnecessary uploads if validation fails
+    try {
+      await tankService.withdrawFuelFromTank(fuelQuantity, workerId, vehicleId);
+    } catch (error) {
+      // If tank withdrawal fails, don't create the fuel log
+      throw error;
+    }
+
+    // 5. Upload images to Cloudinary if provided
     const [
       uploadedOdometerBeforeImage,
       uploadedOdometerAfterImage,
@@ -78,10 +98,10 @@ class FuelLogService {
       pumpAfterImage ? uploadBase64Image(pumpAfterImage, 'fuel-logs/pump') : null,
     ]);
 
-    // 4. Calculate total price (rounded to 2 decimal places)
+    // 6. Calculate total price (rounded to 2 decimal places)
     const totalPrice = Math.round(fuelPrice * fuelQuantity * 100) / 100;
 
-    // 5. Create fuel log (including GPS location and images if provided)
+    // 7. Create fuel log (including GPS location and images if provided)
     return fuelLogRepository.create({
       vehicleId,
       workerId,

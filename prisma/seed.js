@@ -5,6 +5,7 @@
  *  - 1 Admin user
  *  - 2 Worker users
  *  - 3 Sample vehicles
+ *  - 1 Tank record
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -118,6 +119,35 @@ async function main() {
       },
     });
     console.log('✅  Sample fuel log created');
+  }
+
+  // ─── Initialize Tank ─────────────────────────────────────────────────────────
+  const existingTank = await prisma.tank.findFirst();
+
+  if (!existingTank) {
+    await prisma.tank.create({
+      data: {
+        currentBalance: 0,
+        totalAdded: 0,
+        totalWithdrawn: 0,
+      },
+    });
+    console.log('✅  Tank initialized');
+  }
+
+  // ─── Initialize Settings ──────────────────────────────────────────────────────
+  const existingSettings = await prisma.settings.findUnique({
+    where: { id: 1 }
+  });
+
+  if (!existingSettings) {
+    await prisma.settings.create({
+      data: {
+        id: 1,
+        fuelPrice: 2.5, // Default fuel price
+      },
+    });
+    console.log('✅  Settings initialized with default fuel price: $2.5/liter');
   }
 
   console.log('\n🎉  Database seed completed successfully!');
